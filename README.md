@@ -13,6 +13,9 @@ Please someone English translation...
 Does not solve the problem efficiently.
 I will challenge in solving the problem to think "Walker".
 
+## Requirements
+* Simple Build Tool Ver.0.12.0
+
 ## Run
 
     sbt run
