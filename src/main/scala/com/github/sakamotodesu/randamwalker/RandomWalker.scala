@@ -12,7 +12,7 @@ object RandomWalker {
   }
 
   case class Map(x:Int,y:Int){
-    def contains(p:Point) = if(0 <= p.x && p.x <= x && 0 <= p.y && p.y <= y) true else false
+    def contains(p:Point) = if(0 <= p.x  && p.x <= x - 1 && 0 <= p.y && p.y <= y - 1) true else false
   }
 
   def VisibleMap(map:Map,way:Way) =  {
@@ -25,11 +25,11 @@ object RandomWalker {
     vm.map(_.fold("")((z,n)=> z + " " + n + " ")).fold("")((z,n)=>z+n+"\n") 
   }
 
-  case class Point(x:Int,y:Int){
-    def up = Point(x,y+1)
-    def down = Point(x,y-1)
-    def left = Point(x-1,y)
-    def right = Point(x+1,y)
+  case class Point(x:Int,y:Int) extends {
+    def up = Point(x+1,y)
+    def down = Point(x-1,y)
+    def left = Point(x,y-1)
+    def right = Point(x,y+1)
   }
 
   case class Way(way:List[Point], turn:Int){
@@ -47,7 +47,6 @@ object RandomWalker {
 
   abstract class Walker (map:Map,maxTurn:Int){
     def walk(w:Way, p:Point) =  w.add(p,w.turn + (w isTurn p))
-    // TODO: sometime over map?
     def movable(w:Way) = List(w.head.up, w.head.down, w.head.left, w.head.right).filter(map contains _).filter( n => !(w passed n)).filter( n => (w isTurn n) + w.turn <= maxTurn) 
     def think(w:Way,next:List[Point]):Point
     def start(p:Point) = {
