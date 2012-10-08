@@ -90,5 +90,11 @@ class WaySpec extends Specification {
       val way2 = way1.add(Point(2,0),0)
       (way2 isTurn Point(2,1)) must beEqualTo(1)
     }
+    "rutern 1" in {
+      val way = Way(List(Point(0,0)),0)
+      val way1 = way.add(Point(0,1),0)
+      val way2 = way1.add(Point(1,1),1)
+      (way2 isTurn Point(1,2)) must beEqualTo(1)
+    }
   }
 }

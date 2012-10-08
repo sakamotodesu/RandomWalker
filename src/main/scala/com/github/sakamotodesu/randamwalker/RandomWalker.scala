@@ -40,7 +40,7 @@ object RandomWalker {
     def before = way.tail.head // TODO: safe
     def contains(p:Point) = way contains p
     def passed(p:Point) = ((way indexOfSlice List(p,head)) != -1) || ((way indexOfSlice List(head,p)) != -1)
-    def isTurn(p:Point) = if(stepCount < 2) 0 else if((p.x - before.x ).abs == 2 || (p.y - before.x).abs == 2) 0 else 1 
+    def isTurn(p:Point) = if(stepCount < 2) 0 else if((p.x - before.x ).abs == 2 || (p.y - before.y).abs == 2) 0 else 1 
     def path = if (stepCount < 2 ) (head,Nil) else (head,before)
     override def toString = "Step:" + stepCount + "\nWay:" + way.toString
   }
