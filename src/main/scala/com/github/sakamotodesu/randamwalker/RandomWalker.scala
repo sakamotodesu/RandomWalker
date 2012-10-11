@@ -5,12 +5,9 @@ object RandomWalker {
   def main(args: Array[String]) {
     println("Random Walk start!")
     val map = Map(8,8)
-    val walker = new FoolWalker(map,15)
-    val way = walker.start(Point(4,0))
-    println("steps:" + way.length)
-    println("turn:" + turnCount(way))
-    println(way)
-    println(VisibleMap(map,way))
+    walking(new NoPlanWalker(map,15),map,Point(4,0))
+    walking(new StraightWalker(map,15),map,Point(4,0))
+    walking(new StraightStepBackWalker(map,15),map,Point(4,0))
   }
 
   case class Map(x:Int,y:Int){
@@ -37,13 +34,47 @@ object RandomWalker {
     }
   }
 
-  class FoolWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
+  class NoPlanWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
     def think(w:List[Point],next:List[Point]) =  next(new Random() nextInt(next length))
+    override def toString = "NoPlanWalker"
+  }
+
+  class StraightWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
+    def think(w:List[Point],next:List[Point]) = {
+     next filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
+        case List(p:Point) => p
+	case _ => next(new Random() nextInt(next length))
+      }
+    }
+    override def toString = "StraightWalker"
+  }
+
+  class StraightStepBackWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
+    def think(w:List[Point],next:List[Point]) = {
+      def check(p:Point) = movable(walk(w,p)) match {
+	  case Nil =>  ( next filter ( n => n != p ))(new Random() nextInt(next.length -1)) 
+          case _ => p
+        }
+      next filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
+        case List(p:Point) => check(p)
+        case _ => next(new Random() nextInt(next length))
+      }
+    }   
+    override def toString = "StraightStepBackWalker"
   }
 
   def passed(p:Point,way:List[Point]) = ((way indexOfSlice List(p,way.head)) != -1) || ((way indexOfSlice List(way.head,p)) != -1)
   def isTurn(next:Point,prev:Point) =  if((next.x - prev.x ).abs == 2 || (next.y - prev.y).abs == 2) 0 else 1 
   def turnCount(way:List[Point]) = if(way.length < 2 ) 0 else ( way zip  way.tail.tail).map( n => isTurn(n._1, n._2)).sum
+  def walking(walker:Walker,map:Map,start:Point) = {
+    val way = walker.start(start)
+    println("--------------------------------------------------------")
+    println("walker:" + walker)
+    println("steps:" + way.length)
+    println("turn:" + turnCount(way))
+    println(way.reverse)
+    println(VisibleMap(map,way))
+  }
 
   def VisibleMap(map:Map,way:List[Point]) =  {
     def expand(n:Int) = 2 * n + 1
