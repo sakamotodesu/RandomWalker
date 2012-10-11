@@ -21,7 +21,7 @@ I will challenge in solving the problem to think "Walker".
     sbt run
 
 ##Next Step
-* visible map
+* visible map -- Finished!
 * more walkers
 * parallel
 * walker is better strategy to learn
