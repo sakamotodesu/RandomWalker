@@ -51,14 +51,18 @@ object RandomWalker {
 
   class StraightStepBackWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
     def think(w:List[Point],next:List[Point]) = {
-      def check(p:Point) = movable(walk(w,p)) match {
-	  case Nil =>  ( next filter ( n => n != p ))(new Random() nextInt(next.length -1)) 
-          case _ => p
+      def check(p:Point) = {
+        movable(walk(w,p)) match {
+	  case Nil =>  false
+          case _ => true
         }
-      next filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
-        case List(p:Point) => check(p)
-        case _ => next(new Random() nextInt(next length))
       }
+      val nn = next filter( n => check(n)) 
+      if (nn.length == 0) next(new Random() nextInt(next length))
+      else nn filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
+             case List(p:Point) => p
+             case _ => nn(new Random() nextInt(nn length))
+           }
     }   
     override def toString = "StraightStepBackWalker"
   }
