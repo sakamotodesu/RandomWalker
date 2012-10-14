@@ -63,13 +63,14 @@ class StraightPrudent(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
         case _ => true
       }
     }
-    val nn = next filter( n => check(n)) 
-    if (nn.length == 0) next(new Random() nextInt(next length))
-    else nn filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
-           case List(p:Point) => p
-           case _ => nn(new Random() nextInt(nn length))
-         }
-  }   
+    next filter( n => check(n)) match {
+      case Nil =>  next(new Random() nextInt(next length))
+      case nn =>  nn filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
+        case List(p:Point) => p
+        case _ => nn(new Random() nextInt(nn length))
+      }
+    } 
+  } 
   override def toString = "StraightPrudentWalker"
 }
 
