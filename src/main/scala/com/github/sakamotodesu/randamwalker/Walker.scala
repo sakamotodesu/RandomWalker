@@ -46,31 +46,34 @@ class NoPlanWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
 }
 
 class StraightWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
-  def think(w:List[Point],next:List[Point]) = {
+  def straight(w:List[Point],next:List[Point]) = {
    next filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
       case List(p:Point) => p
       case _ => next(new Random() nextInt(next length))
     }
   }
+  def think(w:List[Point],next:List[Point]) = straight(w,next)
   override def toString = "StraightWalker"
 }
 
-class StraightPrudent(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
-  def think(w:List[Point],next:List[Point]) = {
+class StraightPrudent(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn){
+  override def think(w:List[Point],next:List[Point]) = {
     def check(p:Point) = {
       movable(walk(w,p)) match {
- case Nil =>  false
+        case Nil =>  false
         case _ => true
       }
     }
     next filter( n => check(n)) match {
       case Nil =>  next(new Random() nextInt(next length))
-      case nn =>  nn filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
-        case List(p:Point) => p
-        case _ => nn(new Random() nextInt(nn length))
-      }
+      case nn => straight(w,nn) 
     } 
   } 
   override def toString = "StraightPrudentWalker"
 }
 
+class Plan8020Walker(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn){
+  override def think(w:List[Point],next:List[Point]) =
+    if ( ( new Random()).nextInt( 100 ) < 80 ) straight(w,next) else   next(new Random() nextInt(next length))
+  override def toString = "Plan8020Walker"
+}

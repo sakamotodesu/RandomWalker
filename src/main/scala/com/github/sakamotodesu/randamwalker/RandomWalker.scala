@@ -9,6 +9,7 @@ object RandomWalker {
     walking(new NoPlanWalker(map,15),map,Point(4,0))
     walking(new StraightWalker(map,15),map,Point(4,0))
     walking(new StraightPrudent(map,15),map,Point(4,0))
+    walking(new Plan8020Walker(map,15),map,Point(4,0))
   }
 
   def walking(walker:Walker,map:Map,start:Point) = {
