@@ -23,11 +23,14 @@ case class Map(x:Int,y:Int){
   }
 }
 
-abstract class Walker (map:Map,maxTurn:Int){
+trait Walk{
   def passed(p:Point,way:List[Point]) = ((way indexOfSlice List(p,way.head)) != -1) || ((way indexOfSlice List(way.head,p)) != -1)
   def isTurn(next:Point,prev:Point) =  if((next.x - prev.x ).abs == 2 || (next.y - prev.y).abs == 2) 0 else 1 
   def turnCount(way:List[Point]) = if(way.length < 2 ) 0 else ( way zip  way.tail.tail).map( n => isTurn(n._1, n._2)).sum
   def walk(w:List[Point], p:Point) =  p::w
+}
+
+abstract class Walker (map:Map,maxTurn:Int) extends Walk{
   def movable(w:List[Point]) = List(w.head.up, w.head.down, w.head.left, w.head.right).filter(map contains _).filter( n => !(passed(n,w))).filter( n =>  if (w.length < 2 ) true else (isTurn(n,w.tail.head) + turnCount(w) <= maxTurn)) 
   def think(w:List[Point],next:List[Point]):Point
   def start(p:Point) = {
@@ -43,23 +46,31 @@ trait RandomWalk{
   def random(w:List[Point],next:List[Point]) =  next(new Random() nextInt(next length))
 }
 
-class NoPlanWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn) with RandomWalk{
-  def think(w:List[Point],next:List[Point]) =  random(w,next)
-  override def toString = "NoPlanWalker"
-}
-
-class StraightWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
+trait StraightWalk extends Walk{
   def straight(w:List[Point],next:List[Point]) = {
    next filter( n => if( w.length < 2 ) true else (isTurn(n,w.tail.head) == 0 ))  match {
       case List(p:Point) => p
       case _ => next(new Random() nextInt(next length))
     }
   }
+}
+
+trait Probability {
+  def toBeTrue(n:Int) = (new Random() nextInt(100)) < n
+  def toBeFalse(n:Int) = (new Random() nextInt(100)) >= n
+}
+
+class NoPlanWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn) with RandomWalk{
+  def think(w:List[Point],next:List[Point]) =  random(w,next)
+  override def toString = "NoPlanWalker"
+}
+
+class StraightWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn) with StraightWalk{
   def think(w:List[Point],next:List[Point]) = straight(w,next)
   override def toString = "StraightWalker"
 }
 
-class StraightPrudent(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn) with RandomWalk{
+class StraightPrudent(map:Map,maxTurn:Int) extends Walker(map,maxTurn) with RandomWalk with StraightWalk{
   override def think(w:List[Point],next:List[Point]) = {
     def check(p:Point) = {
       movable(walk(w,p)) match {
@@ -75,8 +86,8 @@ class StraightPrudent(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn) w
   override def toString = "StraightPrudentWalker"
 }
 
-class Plan8020Walker(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn) with RandomWalk{
+class Plan8020Walker(map:Map,maxTurn:Int) extends Walker(map,maxTurn) with RandomWalk with StraightWalk with Probability{
   override def think(w:List[Point],next:List[Point]) =
-    if ( ( new Random()).nextInt( 100 ) < 80 ) straight(w,next) else random(w,next)
+    if (toBeTrue(80)) straight(w,next) else random(w,next)
   override def toString = "Plan8020Walker"
 }
