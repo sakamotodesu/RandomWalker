@@ -23,7 +23,6 @@ case class Map(x:Int,y:Int){
   }
 }
 
-
 abstract class Walker (map:Map,maxTurn:Int){
   def passed(p:Point,way:List[Point]) = ((way indexOfSlice List(p,way.head)) != -1) || ((way indexOfSlice List(way.head,p)) != -1)
   def isTurn(next:Point,prev:Point) =  if((next.x - prev.x ).abs == 2 || (next.y - prev.y).abs == 2) 0 else 1 
@@ -40,8 +39,12 @@ abstract class Walker (map:Map,maxTurn:Int){
   }
 }
 
-class NoPlanWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
-  def think(w:List[Point],next:List[Point]) =  next(new Random() nextInt(next length))
+trait RandomWalk{ 
+  def random(w:List[Point],next:List[Point]) =  next(new Random() nextInt(next length))
+}
+
+class NoPlanWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn) with RandomWalk{
+  def think(w:List[Point],next:List[Point]) =  random(w,next)
   override def toString = "NoPlanWalker"
 }
 
@@ -56,7 +59,7 @@ class StraightWalker(map:Map,maxTurn:Int) extends Walker(map,maxTurn){
   override def toString = "StraightWalker"
 }
 
-class StraightPrudent(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn){
+class StraightPrudent(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn) with RandomWalk{
   override def think(w:List[Point],next:List[Point]) = {
     def check(p:Point) = {
       movable(walk(w,p)) match {
@@ -65,15 +68,15 @@ class StraightPrudent(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn){
       }
     }
     next filter( n => check(n)) match {
-      case Nil =>  next(new Random() nextInt(next length))
+      case Nil => random(w,next)
       case nn => straight(w,nn) 
     } 
   } 
   override def toString = "StraightPrudentWalker"
 }
 
-class Plan8020Walker(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn){
+class Plan8020Walker(map:Map,maxTurn:Int) extends StraightWalker(map,maxTurn) with RandomWalk{
   override def think(w:List[Point],next:List[Point]) =
-    if ( ( new Random()).nextInt( 100 ) < 80 ) straight(w,next) else   next(new Random() nextInt(next length))
+    if ( ( new Random()).nextInt( 100 ) < 80 ) straight(w,next) else random(w,next)
   override def toString = "Plan8020Walker"
 }
