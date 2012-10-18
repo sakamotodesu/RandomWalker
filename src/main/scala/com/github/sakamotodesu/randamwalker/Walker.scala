@@ -91,3 +91,9 @@ class Plan8020Walker(map:Map,maxTurn:Int) extends Walker(map,maxTurn) with Rando
     if (toBeTrue(80)) straight(w,next) else random(w,next)
   override def toString = "Plan8020Walker"
 }
+
+class ProbWalker(p:Int,map:Map,maxTurn:Int) extends Walker(map,maxTurn) with RandomWalk with StraightWalk with Probability{
+  override def think(w:List[Point],next:List[Point]) =
+    if (toBeTrue(p)) straight(w,next) else random(w,next)
+  override def toString = "ProbWalker-" + p
+}
