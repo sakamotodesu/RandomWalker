@@ -1,5 +1,6 @@
 package com.github.sakamotodesu.randomwalker
 import scala.util.Random
+import scala.annotation.tailrec
 
 case class Point(x:Int,y:Int) {
   def up = Point(x+1,y)
@@ -34,6 +35,7 @@ abstract class Walker (map:Map,maxTurn:Int) extends Walk{
   def movable(w:List[Point]) = List(w.head.up, w.head.down, w.head.left, w.head.right).filter(map contains _).filter( n => !(passed(n,w))).filter( n =>  if (w.length < 2 ) true else (isTurn(n,w.tail.head) + turnCount(w) <= maxTurn)) 
   def think(w:List[Point],next:List[Point]):Point
   def start(p:Point) = {
+    @tailrec
     def walking(w:List[Point]):List[Point] = movable(w) match {
       case Nil => w
       case l => walking(walk(w,think(w,l)))
