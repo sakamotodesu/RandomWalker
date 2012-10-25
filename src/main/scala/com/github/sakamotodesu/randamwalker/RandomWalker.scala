@@ -1,25 +1,39 @@
 package com.github.sakamotodesu.randomwalker
 import scala.util.Random
 import com.github.sakamotodesu.randomwalker._
+import akka.actor._
 
 object RandomWalker {
   def main(args: Array[String]) {
     println("Random Walk start!")
     val map = Map(8,8)
-    walking(new NoPlanWalker(map,15),map,Point(4,0))
-    walking(new StraightWalker(map,15),map,Point(4,0))
-    walking(new StraightPrudent(map,15),map,Point(4,0))
-    walking(new Plan8020Walker(map,15),map,Point(4,0))
-    walking(new ProbWalker(90,map,15),map,Point(4,0))
+    val system = ActorSystem("WalkingActorSystem")
+    val walkActor = system.actorOf(Props[WalkActor], name = "walkActor")
+    
+    walkActor ! LetsWalk(new NoPlanWalker(map, 15, Point(4,0)))
+    walkActor ! LetsWalk(new StraightWalker(map, 15, Point(4,0)))
+    walkActor ! LetsWalk(new StraightPrudentWalker(map, 15, Point(4,0)))
+    walkActor ! LetsWalk(new Plan8020Walker(map, 15, Point(4,0)))
+    walkActor ! LetsWalk(new ProbWalker(10, map, 15, Point(4,0)))
+   system.shutdown()
   }
 
-  def walking(walker:Walker,map:Map,start:Point) = {
-    val way = walker.start(start)
+  case class LetsWalk(walker:Walker)
+
+  class WalkActor extends Actor {
+    def receive  = {
+      case LetsWalk(walker) => walking(walker)
+                               context.stop(self)
+    }
+  }
+
+  def walking(walker:Walker) = {
+    val way = walker.start
     println("--------------------------------------------------------")
     println("walker:" + walker)
     println("steps:" + way.length)
     println("turn:" + walker.turnCount(way))
     println(way.reverse)
-    println(map.VisibleMap(way))
+    println(walker.VisibleMap(way))
   }
 }
