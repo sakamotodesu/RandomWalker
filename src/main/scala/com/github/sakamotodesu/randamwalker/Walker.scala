@@ -20,7 +20,7 @@ trait Walk{
   def walk(w:List[Point], p:Point) =  p::w
 }
 
-abstract class Walker (map:Map,maxTurn:Int,startPoint:Point) extends Walk{
+abstract case class Walker (map:Map,maxTurn:Int,startPoint:Point) extends Walk{
   def movable(w:List[Point]) = List(w.head.up, w.head.down, w.head.left, w.head.right).filter(map contains _).filter( n => !(passed(n,w))).filter( n =>  if (w.length < 2 ) true else (isTurn(n,w.tail.head) + turnCount(w) <= maxTurn)) 
   def think(w:List[Point],next:List[Point]):Point
   def start = {
@@ -30,17 +30,6 @@ abstract class Walker (map:Map,maxTurn:Int,startPoint:Point) extends Walk{
       case l => walking(walk(w,think(w,l)))
     }
     walking(List(startPoint))
-  }
-  def VisibleMap(way:List[Point]) =  {
-    def expand(n:Int) = 2 * n + 1
-    def path(n:Int) = expand(n)/2
-    val vm = Array.ofDim[String](expand(map.x), expand(map.y))
-    for ( i <- 0 to expand(map.x) - 1; j <- 0 to expand(map.y) - 1) vm(i)(j) = " " //TODO: do not use for
-    for ( i <- 0 to map.x - 1; j <- 0 to map.y - 1) vm(expand(i))(expand(j)) = "p" //TODO: do not use for
-    vm(expand(way.head.x))(expand(way.head.y)) = "E"
-    vm(expand(way.last.x))(expand(way.last.y)) = "S"
-    way zip way.tail map( n => vm(path(n._1.x)+path(n._2.x)+1)(path(n._1.y)+path(n._2.y)+1) = "+")
-    vm.map(_.fold("")((z,n)=> z + " " + n + " ")).fold("")((z,n)=>z+n+"\n") 
   }
 }
 
