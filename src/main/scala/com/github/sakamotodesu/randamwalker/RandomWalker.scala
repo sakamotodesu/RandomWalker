@@ -1,4 +1,5 @@
 package com.github.sakamotodesu.randomwalker
+
 import scala.util.Random
 import com.github.sakamotodesu.randomwalker.way._
 import com.github.sakamotodesu.randomwalker.walker._
@@ -7,7 +8,6 @@ import akka.routing.RoundRobinRouter
 
 object RandomWalker {
   def main(args: Array[String]) {
-    println("Random Walk start!")
     val system = ActorSystem("WalkingActorSystem")
     val walkMaster = system.actorOf(Props(new WalkMaster(nrOfWorkers = 2, nrOfWalkPlans = 5, startPoint = Point(4,0), map = Map(8,8))), name = "walkMaster")
     
@@ -31,11 +31,11 @@ object RandomWalker {
 
     def receive = {
       case StartWalking => 
-        walkActorRouter ! LetsWalk(new NoPlanWalker(map, 15, Point(4,0)))
-        walkActorRouter ! LetsWalk(new StraightWalker(map, 15, Point(4,0)))
-        walkActorRouter ! LetsWalk(new StraightPrudentWalker(map, 15, Point(4,0)))
-        walkActorRouter ! LetsWalk(new Plan8020Walker(map, 15, Point(4,0)))
-        walkActorRouter ! LetsWalk(new ProbWalker(10, map, 15, Point(4,0)))
+        walkActorRouter ! LetsWalk(new NoPlanWalker(map, 15, List(Point(4,0))))
+        walkActorRouter ! LetsWalk(new StraightWalker(map, 15, List(Point(4,0))))
+        walkActorRouter ! LetsWalk(new StraightPrudentWalker(map, 15, List(Point(4,0))))
+        walkActorRouter ! LetsWalk(new Plan8020Walker(map, 15, List(Point(4,0))))
+        walkActorRouter ! LetsWalk(new ProbWalker(10, map, 15, List(Point(4,0))))
 
       case Result(walker, way) => 
         nrOfResults += 1
@@ -58,7 +58,6 @@ object RandomWalker {
     way zip way.tail map( n => vm(path(n._1.x)+path(n._2.x)+1)(path(n._1.y)+path(n._2.y)+1) = "+")
     vm.map(_.fold("")((z,n)=> z + " " + n + " ")).fold("")((z,n)=>z+n+"\n") 
   }
-
 
   def printWay(walker: Walker, way: List[Point], map: Map) = {
     println("--------------------------------------------------------")
