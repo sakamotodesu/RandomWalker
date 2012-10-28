@@ -22,6 +22,6 @@ I will challenge in solving the problem to think "Walker".
 
 ##Next Step
 * visible map -- Finished!
-* more walkers
-* parallel
+* more walkers -- Finished!
+* parallel -- Finished!
 * walker is better strategy to learn
