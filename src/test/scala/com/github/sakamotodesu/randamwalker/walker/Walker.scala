@@ -1,6 +1,7 @@
 package com.github.sakamotodesu.randomwalker
 import org.specs2.mutable._
-import com.github.sakamotodesu.randomwalker.RandomWalker._
+import com.github.sakamotodesu.randomwalker.way._
+import com.github.sakamotodesu.randomwalker.walker._
 
 class WalkerSpec extends Specification {
   "The 'Walker' after start" should {

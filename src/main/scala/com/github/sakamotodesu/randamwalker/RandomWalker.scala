@@ -1,6 +1,7 @@
 package com.github.sakamotodesu.randomwalker
 import scala.util.Random
-import com.github.sakamotodesu.randomwalker._
+import com.github.sakamotodesu.randomwalker.way._
+import com.github.sakamotodesu.randomwalker.walker._
 import akka.actor._
 import akka.routing.RoundRobinRouter
 
@@ -16,11 +17,11 @@ object RandomWalker {
   sealed trait WalkingMessage
   case object StartWalking extends WalkingMessage
   case class LetsWalk(walker: Walker) extends WalkingMessage
-  case class Result(way: List[Point]) extends WalkingMessage
+  case class Result(walker: Walker, way: List[Point]) extends WalkingMessage
 
   class WalkActor extends Actor {
     def receive  = {
-      case LetsWalk(walker) => sender ! Result(walker.start)
+      case LetsWalk(walker) => sender ! Result(walker, walker.start)
     }
   }
 
@@ -36,9 +37,9 @@ object RandomWalker {
         walkActorRouter ! LetsWalk(new Plan8020Walker(map, 15, Point(4,0)))
         walkActorRouter ! LetsWalk(new ProbWalker(10, map, 15, Point(4,0)))
 
-      case Result(way) => 
+      case Result(walker, way) => 
         nrOfResults += 1
-        printWay(way, map)
+        printWay(walker, way, map)
         if (nrOfResults == nrOfWalkPlans) {
           context.stop(self)
           context.system.shutdown()
@@ -58,13 +59,12 @@ object RandomWalker {
     vm.map(_.fold("")((z,n)=> z + " " + n + " ")).fold("")((z,n)=>z+n+"\n") 
   }
 
-  def isTurn(next:Point,prev:Point) =  if((next.x - prev.x ).abs == 2 || (next.y - prev.y).abs == 2) 0 else 1 
-  def turnCount(way:List[Point]) = if(way.length < 2 ) 0 else ( way zip  way.tail.tail).map( n => isTurn(n._1, n._2)).sum
 
-  def printWay(way: List[Point], map: Map) = {
+  def printWay(walker: Walker, way: List[Point], map: Map) = {
     println("--------------------------------------------------------")
+    println("walker:" + walker.toString)
     println("steps:" + way.length)
-    println("turn:" + turnCount(way))
+    println("turn:" + Way.turnCount(way))
     println(way.reverse)
     println(VisibleMap(way, map))
   }
