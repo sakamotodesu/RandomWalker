@@ -9,7 +9,7 @@ object RandomwalkerBuild extends Build {
     settings = Project.defaultSettings ++ Seq(
       name := "RandomWalker",
       organization := "com.github.sakamotodesu.randomwalker",
-      version := "0.1-SNAPSHOT",
+      version := "0.2-SNAPSHOT",
       scalaVersion := "2.9.2",
       resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases",
       libraryDependencies ++= Seq("com.typesafe.akka" % "akka-actor" % "2.0.1",
