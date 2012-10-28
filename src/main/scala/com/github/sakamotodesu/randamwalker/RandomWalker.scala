@@ -2,30 +2,50 @@ package com.github.sakamotodesu.randomwalker
 import scala.util.Random
 import com.github.sakamotodesu.randomwalker._
 import akka.actor._
+import akka.routing.RoundRobinRouter
 
 object RandomWalker {
   def main(args: Array[String]) {
     println("Random Walk start!")
-    val map = Map(8,8)
     val system = ActorSystem("WalkingActorSystem")
-    val walkActor = system.actorOf(Props[WalkActor], name = "walkActor")
+    val walkMaster = system.actorOf(Props(new WalkMaster(nrOfWorkers = 2, nrOfWalkPlans = 5, startPoint = Point(4,0), map = Map(8,8))), name = "walkMaster")
     
-    walkActor ! LetsWalk(new NoPlanWalker(map, 15, Point(4,0)))
-    walkActor ! LetsWalk(new StraightWalker(map, 15, Point(4,0)))
-    walkActor ! LetsWalk(new StraightPrudentWalker(map, 15, Point(4,0)))
-    walkActor ! LetsWalk(new Plan8020Walker(map, 15, Point(4,0)))
-    walkActor ! LetsWalk(new ProbWalker(10, map, 15, Point(4,0)))
-   system.shutdown()
+    walkMaster ! StartWalking
   }
 
-  case class LetsWalk(walker:Walker)
+  sealed trait WalkingMessage
+  case object StartWalking extends WalkingMessage
+  case class LetsWalk(walker: Walker) extends WalkingMessage
+  case class Result(way: List[Point]) extends WalkingMessage
 
   class WalkActor extends Actor {
     def receive  = {
-      case LetsWalk(walker) => walking(walker)
-                               context.stop(self)
+      case LetsWalk(walker) => sender ! Result(walker.start)
     }
   }
+
+  class WalkMaster (nrOfWorkers: Int, nrOfWalkPlans: Int, startPoint: Point, map: Map)extends Actor {
+    var nrOfResults: Int = _
+    val walkActorRouter = context.actorOf(Props[WalkActor].withRouter(RoundRobinRouter(nrOfWorkers)), name = "walkActorRouter")
+
+    def receive = {
+      case StartWalking => 
+        walkActorRouter ! LetsWalk(new NoPlanWalker(map, 15, Point(4,0)))
+        walkActorRouter ! LetsWalk(new StraightWalker(map, 15, Point(4,0)))
+        walkActorRouter ! LetsWalk(new StraightPrudentWalker(map, 15, Point(4,0)))
+        walkActorRouter ! LetsWalk(new Plan8020Walker(map, 15, Point(4,0)))
+        walkActorRouter ! LetsWalk(new ProbWalker(10, map, 15, Point(4,0)))
+
+      case Result(way) => 
+        nrOfResults += 1
+        printWay(way, map)
+        if (nrOfResults == nrOfWalkPlans) {
+          context.stop(self)
+          context.system.shutdown()
+        }
+    }
+  }
+
   def VisibleMap(way:List[Point],map:Map) =  {
     def expand(n:Int) = 2 * n + 1
     def path(n:Int) = expand(n)/2
@@ -38,13 +58,14 @@ object RandomWalker {
     vm.map(_.fold("")((z,n)=> z + " " + n + " ")).fold("")((z,n)=>z+n+"\n") 
   }
 
-  def walking(walker:Walker) = {
-    val way = walker.start
+  def isTurn(next:Point,prev:Point) =  if((next.x - prev.x ).abs == 2 || (next.y - prev.y).abs == 2) 0 else 1 
+  def turnCount(way:List[Point]) = if(way.length < 2 ) 0 else ( way zip  way.tail.tail).map( n => isTurn(n._1, n._2)).sum
+
+  def printWay(way: List[Point], map: Map) = {
     println("--------------------------------------------------------")
-    println("walker:" + walker)
     println("steps:" + way.length)
-    println("turn:" + walker.turnCount(way))
+    println("turn:" + turnCount(way))
     println(way.reverse)
-    println(VisibleMap(way,walker.map))
+    println(VisibleMap(way, map))
   }
 }
