@@ -10,10 +10,13 @@ import akka.routing.RoundRobinRouter
 object RandomWalker {
 
   def main(args: Array[String]) {
+    println("RandamWalker Start!")
     val system = ActorSystem("WalkingActorSystem")
-    val allWalkerMaster = system.actorOf(Props(new AllWalkerMaster(nrOfWorkers = 2, nrOfWalkPlans = 5, startPoint = Point(4,0), map = Map(8,8))), name = "walkMaster")
+    //val allWalkerMaster = system.actorOf(Props(new AllWalkerMaster(nrOfWorkers = 2, nrOfWalkPlans = 5, startPoint = Point(4,0), map = Map(8,8))), name = "walkMaster")
+    val GAMaster = system.actorOf(Props(new GAMaster(nrOfWorkers = 2, nrOfMaxGenerations = 1000, startPoint = Point(4,0), map = Map(8,8), maxTurn = 15, worldRecord = 76)), name = "GAMaster")
     
-    allWalkerMaster ! StartWalking
+    //allWalkerMaster ! StartWalking
+    GAMaster ! StartWalking
   }
 
   sealed trait WalkingMessage
@@ -29,7 +32,7 @@ object RandomWalker {
     }
   }
 
-  class GeneWalkActor (nrOfWorkers: Int ,map: Map, maxTurn: Int) extends Actor {
+  class GeneWalkActor (nrOfWorkers: Int ,map: Map, maxTurn: Int, GAMaster: ActorRef ) extends Actor {
     var nrOfResults: Int = _
     var nrOfWays: Int = _
     var resultWays: List[List[Point]] = List()
@@ -47,18 +50,18 @@ object RandomWalker {
         nrOfResults += 1
 	resultWays = way::resultWays
         if (nrOfResults == nrOfWays) {
-	  sender ! ResultsNextGeneration(resultWays)
+	  GAMaster ! ResultsNextGeneration(resultWays)
         }
     }
   }
 
   class GAMaster (nrOfWorkers: Int, nrOfMaxGenerations: Int, startPoint: Point, map: Map, maxTurn: Int, worldRecord: Int) extends Actor {
-    var nrOfResults: Int = _
-    var nrOfResultsGenerations: Int = _
-    val geneWalkActor = context.actorOf(Props( new GeneWalkActor( nrOfWorkers, map, maxTurn ) ), name = "geneWalkActor")
+    var nrOfGenerations: Int = _
+    var mostLongWay: List[Point] = List()
+    val geneWalkActor = context.actorOf(Props( new GeneWalkActor( nrOfWorkers, map, maxTurn ,self ) ), name = "geneWalkActor")
 
     def receive = {
-      case StartWalking => nextGenerationStart( List( ( new NoPlanWalker( map, maxTurn, List( startPoint ) ) ).start ) )
+      case StartWalking => println("GAMaster start!"); nextGenerationStart( List( ( new NoPlanWalker( map, maxTurn, List( startPoint ) ) ).start ) )
 
       case ResultsNextGeneration(ways) => GA(ways)
     }
@@ -68,13 +71,32 @@ object RandomWalker {
     def makeNextGenerationSeed(way: List[Point]) = {
       @tailrec
       def separateByTurn(seedWay: List[Point], ways: List[List[Point]]):List[List[Point]] = {
-        if ( seedWay.length < 2 ) ways
+        if ( seedWay.length <= 2 ) ways
 	else if ( Way.isTurn( seedWay.head, seedWay.tail.tail.head ) == 1 ) separateByTurn(seedWay.tail, seedWay.tail.tail::ways)
 	else separateByTurn(seedWay.tail, ways)
       }
       separateByTurn(way, List())
     }
-    def GA(ways: List[List[Point]]) =  nextGenerationStart( makeNextGenerationSeed( evaluate( ways ) ) ) // TODO: record Judge,generation count
+    def GA(ways: List[List[Point]]) = {
+      nrOfGenerations += 1
+      val highscoreWay = evaluate(ways)
+      println("Generation:" + nrOfGenerations)
+      //printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
+      if ( mostLongWay.length < highscoreWay.length ) mostLongWay = highscoreWay
+      if ( highscoreWay.length >= worldRecord ) {
+        println("Wow!!! new world record !!!!!!!!!!")
+        printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
+        context.system.shutdown()
+        println("RandamWalker end!")
+      }
+      if ( nrOfGenerations == nrOfMaxGenerations ){
+        println("max Generation!")
+        printWay(new ProbWalker(80, map, maxTurn, mostLongWay), mostLongWay, map)
+        context.system.shutdown()
+        println("RandamWalker end!")
+      }
+      nextGenerationStart( makeNextGenerationSeed(highscoreWay ) )
+    }
   }
 
   class AllWalkerMaster (nrOfWorkers: Int, nrOfWalkPlans: Int, startPoint: Point, map: Map)extends Actor {
