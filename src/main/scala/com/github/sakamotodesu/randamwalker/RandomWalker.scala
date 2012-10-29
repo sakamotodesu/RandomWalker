@@ -1,23 +1,27 @@
 package com.github.sakamotodesu.randomwalker
 
 import scala.util.Random
+import scala.annotation.tailrec
 import com.github.sakamotodesu.randomwalker.way._
 import com.github.sakamotodesu.randomwalker.walker._
 import akka.actor._
 import akka.routing.RoundRobinRouter
 
 object RandomWalker {
+
   def main(args: Array[String]) {
     val system = ActorSystem("WalkingActorSystem")
-    val walkMaster = system.actorOf(Props(new WalkMaster(nrOfWorkers = 2, nrOfWalkPlans = 5, startPoint = Point(4,0), map = Map(8,8))), name = "walkMaster")
+    val allWalkerMaster = system.actorOf(Props(new AllWalkerMaster(nrOfWorkers = 2, nrOfWalkPlans = 5, startPoint = Point(4,0), map = Map(8,8))), name = "walkMaster")
     
-    walkMaster ! StartWalking
+    allWalkerMaster ! StartWalking
   }
 
   sealed trait WalkingMessage
   case object StartWalking extends WalkingMessage
   case class LetsWalk(walker: Walker) extends WalkingMessage
   case class Result(walker: Walker, way: List[Point]) extends WalkingMessage
+  case class StartNextGeneration(ways: List[List[Point]]) extends WalkingMessage
+  case class ResultsNextGeneration(ways: List[List[Point]]) extends WalkingMessage
 
   class WalkActor extends Actor {
     def receive  = {
@@ -25,7 +29,55 @@ object RandomWalker {
     }
   }
 
-  class WalkMaster (nrOfWorkers: Int, nrOfWalkPlans: Int, startPoint: Point, map: Map)extends Actor {
+  class GeneWalkActor (nrOfWorkers: Int ,map: Map, maxTurn: Int) extends Actor {
+    var nrOfResults: Int = _
+    var nrOfWays: Int = _
+    var resultWays: List[List[Point]] = List()
+
+    val walkActorRouter = context.actorOf(Props[WalkActor].withRouter(RoundRobinRouter(nrOfWorkers)), name = "walkActorRouter")
+
+    def receive = {
+      case StartNextGeneration(ways) =>
+        resultWays = List()
+        nrOfResults = 0
+	nrOfWays = ways.length
+	ways.map( way => walkActorRouter ! LetsWalk(new ProbWalker(80, map, maxTurn, way) ) )
+
+      case Result(walker, way) => 
+        nrOfResults += 1
+	resultWays = way::resultWays
+        if (nrOfResults == nrOfWays) {
+	  sender ! ResultsNextGeneration(resultWays)
+        }
+    }
+  }
+
+  class GAMaster (nrOfWorkers: Int, nrOfMaxGenerations: Int, startPoint: Point, map: Map, maxTurn: Int, worldRecord: Int) extends Actor {
+    var nrOfResults: Int = _
+    var nrOfResultsGenerations: Int = _
+    val geneWalkActor = context.actorOf(Props( new GeneWalkActor( nrOfWorkers, map, maxTurn ) ), name = "geneWalkActor")
+
+    def receive = {
+      case StartWalking => nextGenerationStart( List( ( new NoPlanWalker( map, maxTurn, List( startPoint ) ) ).start ) )
+
+      case ResultsNextGeneration(ways) => GA(ways)
+    }
+
+    def nextGenerationStart(ways: List[List[Point]]) = geneWalkActor ! StartNextGeneration(ways)
+    def evaluate(ways: List[List[Point]]) = ways.maxBy(_.length)
+    def makeNextGenerationSeed(way: List[Point]) = {
+      @tailrec
+      def separateByTurn(seedWay: List[Point], ways: List[List[Point]]):List[List[Point]] = {
+        if ( seedWay.length < 2 ) ways
+	else if ( Way.isTurn( seedWay.head, seedWay.tail.tail.head ) == 1 ) separateByTurn(seedWay.tail, seedWay.tail.tail::ways)
+	else separateByTurn(seedWay.tail, ways)
+      }
+      separateByTurn(way, List())
+    }
+    def GA(ways: List[List[Point]]) =  nextGenerationStart( makeNextGenerationSeed( evaluate( ways ) ) ) // TODO: record Judge,generation count
+  }
+
+  class AllWalkerMaster (nrOfWorkers: Int, nrOfWalkPlans: Int, startPoint: Point, map: Map)extends Actor {
     var nrOfResults: Int = _
     val walkActorRouter = context.actorOf(Props[WalkActor].withRouter(RoundRobinRouter(nrOfWorkers)), name = "walkActorRouter")
 
