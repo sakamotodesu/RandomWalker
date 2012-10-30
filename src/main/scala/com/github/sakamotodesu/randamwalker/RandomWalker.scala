@@ -61,7 +61,7 @@ object RandomWalker {
     val geneWalkActor = context.actorOf(Props( new GeneWalkActor( nrOfWorkers, map, maxTurn ,self ) ), name = "geneWalkActor")
 
     def receive = {
-      case StartWalking => println("GAMaster start!"); nextGenerationStart( List( ( new NoPlanWalker( map, maxTurn, List( startPoint ) ) ).start ) )
+      case StartWalking => nextGenerationStart( List( ( new NoPlanWalker( map, maxTurn, List( startPoint ) ) ).start ) )
 
       case ResultsNextGeneration(ways) => GA(ways)
     }
@@ -80,17 +80,22 @@ object RandomWalker {
     def GA(ways: List[List[Point]]) = {
       nrOfGenerations += 1
       val highscoreWay = evaluate(ways)
-      println("Generation:" + nrOfGenerations)
-      //printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
-      if ( mostLongWay.length < highscoreWay.length ) mostLongWay = highscoreWay
-      if ( highscoreWay.length >= worldRecord ) {
+      if ( mostLongWay.length < highscoreWay.length ) {
+        println("update highscore!")
+        println("Generation:" + nrOfGenerations)
+        printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
+        mostLongWay = highscoreWay
+      }
+      if ( highscoreWay.length - 1 > worldRecord ) {
         println("Wow!!! new world record !!!!!!!!!!")
+        println("Generation:" + nrOfGenerations)
         printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
         context.system.shutdown()
         println("RandamWalker end!")
       }
       if ( nrOfGenerations == nrOfMaxGenerations ){
         println("max Generation!")
+        println("Generation:" + nrOfGenerations)
         printWay(new ProbWalker(80, map, maxTurn, mostLongWay), mostLongWay, map)
         context.system.shutdown()
         println("RandamWalker end!")
@@ -136,7 +141,7 @@ object RandomWalker {
   def printWay(walker: Walker, way: List[Point], map: Map) = {
     println("--------------------------------------------------------")
     println("walker:" + walker.toString)
-    println("steps:" + way.length)
+    println("steps:" + ( way.length - 1) )
     println("turn:" + Way.turnCount(way))
     println(way.reverse)
     println(VisibleMap(way, map))
