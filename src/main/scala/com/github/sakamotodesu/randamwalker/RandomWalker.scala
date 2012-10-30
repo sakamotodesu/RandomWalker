@@ -1,6 +1,7 @@
 package com.github.sakamotodesu.randomwalker
 
 import scala.util.Random
+import scala.math
 import scala.annotation.tailrec
 import com.github.sakamotodesu.randomwalker.way._
 import com.github.sakamotodesu.randomwalker.walker._
@@ -65,7 +66,8 @@ object RandomWalker {
     }
 
     def nextGenerationStart(ways: List[List[Point]]) = geneWalkActor ! StartNextGeneration(ways)
-    def evaluate(ways: List[List[Point]]) = ways.maxBy(_.length)
+    def lottery(len:Int) = ( math.pow(new Random() nextInt len ,3) / math.pow(len,2) ) toInt
+    def evaluate(ways: List[List[Point]]) = ways.sortBy( s => s.length ).reverse(lottery( ways.length ))
     def makeNextGenerationSeed(way: List[Point]) = {
       @tailrec
       def separateByTurn(seedWay: List[Point], ways: List[List[Point]]):List[List[Point]] = {
@@ -81,20 +83,17 @@ object RandomWalker {
       val eliteWay = evaluate(ways)
       if ( highscoreWay.length < eliteWay.length ) {
         println("update highscore!")
-        println("Generation:" + nrOfGenerations)
-        printWay(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map)
+        printWay(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map, nrOfGenerations)
         highscoreWay = eliteWay
       }
       if ( eliteWay.length - 1 > worldRecord ) {
         println("Wow!!! new world record !!!!!!!!!!")
-        println("Generation:" + nrOfGenerations)
-        printWay(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map)
+        printWay(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map, nrOfGenerations)
         context.system.shutdown()
         println("RandamWalker end!")
       } else if ( nrOfGenerations == nrOfMaxGenerations ){
         println("max Generation!")
-        println("Generation:" + nrOfGenerations)
-        printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
+        printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map, nrOfGenerations)
         context.system.shutdown()
         println("RandamWalker end!")
       } else {
@@ -107,16 +106,17 @@ object RandomWalker {
     def expand(n:Int) = 2 * n + 1
     def path(n:Int) = expand(n)/2
     val vm = Array.ofDim[String](expand(map.x), expand(map.y))
-    for ( i <- 0 to expand(map.x) - 1; j <- 0 to expand(map.y) - 1) vm(i)(j) = " " //TODO: do not use for
-    for ( i <- 0 to map.x - 1; j <- 0 to map.y - 1) vm(expand(i))(expand(j)) = "p" //TODO: do not use for
+    for ( i <- 0 to expand(map.x) - 1; j <- 0 to expand(map.y) - 1) vm(i)(j) = " "
+    for ( i <- 0 to map.x - 1; j <- 0 to map.y - 1) vm(expand(i))(expand(j)) = "p"
     vm(expand(way.head.x))(expand(way.head.y)) = "E"
     vm(expand(way.last.x))(expand(way.last.y)) = "S"
     way zip way.tail map( n => vm(path(n._1.x)+path(n._2.x)+1)(path(n._1.y)+path(n._2.y)+1) = "+")
     vm.map(_.fold("")((z,n)=> z + " " + n + " ")).fold("")((z,n)=>z+n+"\n") 
   }
 
-  def printWay(walker: Walker, way: List[Point], map: Map) = {
+  def printWay(walker: Walker, way: List[Point], map: Map, nrOfGenerations: Int) = {
     println("--------------------------------------------------------")
+    println("Generation:" + nrOfGenerations)
     println("walker:" + walker.toString)
     println("steps:" + ( way.length - 1) )
     println("turn:" + Way.turnCount(way))
