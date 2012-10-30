@@ -12,10 +12,8 @@ object RandomWalker {
   def main(args: Array[String]) {
     println("RandamWalker Start!")
     val system = ActorSystem("WalkingActorSystem")
-    //val allWalkerMaster = system.actorOf(Props(new AllWalkerMaster(nrOfWorkers = 2, nrOfWalkPlans = 5, startPoint = Point(4,0), map = Map(8,8))), name = "walkMaster")
     val GAMaster = system.actorOf(Props(new GAMaster(nrOfWorkers = 2, nrOfMaxGenerations = 1000, startPoint = Point(4,0), map = Map(8,8), maxTurn = 15, worldRecord = 76)), name = "GAMaster")
     
-    //allWalkerMaster ! StartWalking
     GAMaster ! StartWalking
   }
 
@@ -57,7 +55,7 @@ object RandomWalker {
 
   class GAMaster (nrOfWorkers: Int, nrOfMaxGenerations: Int, startPoint: Point, map: Map, maxTurn: Int, worldRecord: Int) extends Actor {
     var nrOfGenerations: Int = _
-    var mostLongWay: List[Point] = List()
+    var highscoreWay: List[Point] = List()
     val geneWalkActor = context.actorOf(Props( new GeneWalkActor( nrOfWorkers, map, maxTurn ,self ) ), name = "geneWalkActor")
 
     def receive = {
@@ -77,52 +75,31 @@ object RandomWalker {
       }
       separateByTurn(way, List())
     }
+
     def GA(ways: List[List[Point]]) = {
       nrOfGenerations += 1
-      val highscoreWay = evaluate(ways)
-      if ( mostLongWay.length < highscoreWay.length ) {
+      val eliteWay = evaluate(ways)
+      if ( highscoreWay.length < eliteWay.length ) {
         println("update highscore!")
         println("Generation:" + nrOfGenerations)
-        printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
-        mostLongWay = highscoreWay
+        printWay(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map)
+        highscoreWay = eliteWay
       }
-      if ( highscoreWay.length - 1 > worldRecord ) {
+      if ( eliteWay.length - 1 > worldRecord ) {
         println("Wow!!! new world record !!!!!!!!!!")
         println("Generation:" + nrOfGenerations)
+        printWay(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map)
+        context.system.shutdown()
+        println("RandamWalker end!")
+      } else if ( nrOfGenerations == nrOfMaxGenerations ){
+        println("max Generation!")
+        println("Generation:" + nrOfGenerations)
         printWay(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map)
         context.system.shutdown()
         println("RandamWalker end!")
+      } else {
+        nextGenerationStart( makeNextGenerationSeed( eliteWay ) )
       }
-      if ( nrOfGenerations == nrOfMaxGenerations ){
-        println("max Generation!")
-        println("Generation:" + nrOfGenerations)
-        printWay(new ProbWalker(80, map, maxTurn, mostLongWay), mostLongWay, map)
-        context.system.shutdown()
-        println("RandamWalker end!")
-      }
-      nextGenerationStart( makeNextGenerationSeed(highscoreWay ) )
-    }
-  }
-
-  class AllWalkerMaster (nrOfWorkers: Int, nrOfWalkPlans: Int, startPoint: Point, map: Map)extends Actor {
-    var nrOfResults: Int = _
-    val walkActorRouter = context.actorOf(Props[WalkActor].withRouter(RoundRobinRouter(nrOfWorkers)), name = "walkActorRouter")
-
-    def receive = {
-      case StartWalking => 
-        walkActorRouter ! LetsWalk(new NoPlanWalker(map, 15, List(Point(4,0))))
-        walkActorRouter ! LetsWalk(new StraightWalker(map, 15, List(Point(4,0))))
-        walkActorRouter ! LetsWalk(new StraightPrudentWalker(map, 15, List(Point(4,0))))
-        walkActorRouter ! LetsWalk(new Plan8020Walker(map, 15, List(Point(4,0))))
-        walkActorRouter ! LetsWalk(new ProbWalker(10, map, 15, List(Point(4,0))))
-
-      case Result(walker, way) => 
-        nrOfResults += 1
-        printWay(walker, way, map)
-        if (nrOfResults == nrOfWalkPlans) {
-          context.stop(self)
-          context.system.shutdown()
-        }
     }
   }
 
