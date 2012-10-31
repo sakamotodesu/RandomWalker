@@ -9,6 +9,7 @@ import akka.actor._
 import akka.routing.RoundRobinRouter
 import akka.event.Logging
 
+
 object RandomWalker {
 
   def main(args: Array[String]) {
@@ -69,7 +70,10 @@ object RandomWalker {
 
     def nextGenerationStart(ways: List[List[Point]]) = geneWalkActor ! StartNextGeneration(ways)
     def lottery(len:Int) = ( math.pow(new Random() nextInt len ,3) / math.pow(len,2) ) toInt
-    def evaluate(ways: List[List[Point]]) = ways.sortBy( s => s.length ).reverse( lottery( ways.length ) )
+    def evaluate(ways: List[List[Point]]) = {
+      log.debug((ways.map(_.length).sum)/ways.length toString)
+      ways.sortBy( s => s.length ).reverse( lottery( ways.length ) )
+    }
     def makeNextGenerationSeed(way: List[Point]) = {
       @tailrec
       def separateByTurn(seedWay: List[Point], ways: List[List[Point]]):List[List[Point]] = {
@@ -77,7 +81,8 @@ object RandomWalker {
 	else if ( Way.isTurn( seedWay.head, seedWay.tail.tail.head ) == 1 ) separateByTurn(seedWay.tail, seedWay.tail.tail::ways)
 	else separateByTurn(seedWay.tail, ways)
       }
-      separateByTurn(way, List())
+      val nextWays = separateByTurn(way, List())
+      nextWays:::nextWays:::nextWays:::nextWays:::nextWays
     }
 
     def GA(ways: List[List[Point]]) = {
