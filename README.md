@@ -5,8 +5,10 @@ Solve the problem of random walk.
 
 ##Question
 
-[Gist](https://gist.github.com/3671661) (Japanese) 
-Please someone English translation...
+[English](https://gist.github.com/4159080)
+
+[Japanese](https://gist.github.com/3671661)
+
 
 ##Policy
 
