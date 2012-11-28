@@ -12,7 +12,7 @@ abstract case class Walker(map: Map, maxTurn: Int, way: List[Point]) {
 
   def notPassed(p: Point, w: List[Point]) = ! Way.passed(p, w)
 
-  def withinLimit(p: Point, w: List[Point]) = if (w.length < 2 ) true else (Way.isTurn(p, w.tail.head) + Way.turnCount(w) <= maxTurn)
+  def withinLimit(p: Point, w: List[Point]) = if (Way.lessThan2(w)) true else (Way.isTurn(p, w.tail.head) + Way.turnCount(w) <= maxTurn)
 
   def movable(w: List[Point]) = {
     List(w.head.up, w.head.down, w.head.left, w.head.right) filter {inMap(_)} filter {notPassed(_, w)} filter {withinLimit(_, w)} 
@@ -40,7 +40,7 @@ trait RandomWalk {
 trait StraightWalk {
 
   def straight(w: List[Point], next: List[Point]) = {
-   next filter( n => if ( w.length < 2 ) true else (Way.isTurn(n, w.tail.head) == 0 ))  match {
+   next filter( n => if (Way.lessThan2(w)) true else (Way.isTurn(n, w.tail.head) == 0 ))  match {
       case List(p: Point) => p
       case _ => next(new Random() nextInt(next length))
     }

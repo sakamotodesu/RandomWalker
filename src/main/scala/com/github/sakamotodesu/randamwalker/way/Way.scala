@@ -18,6 +18,7 @@ case class Point(x: Int, y: Int) {
 case class Map(x: Int, y: Int) {
 
   def contains(p: Point) = if (0 <= p.x  && p.x <= x - 1 && 0 <= p.y && p.y <= y - 1) true else false
+
 }
 
 object Way {
@@ -27,5 +28,13 @@ object Way {
   def isTurn(next: Point, prev: Point) =  if ((next.x - prev.x ).abs == 2 || (next.y - prev.y).abs == 2) 0 else 1 
 
   def turnCount(way: List[Point]) = if (way.length < 2 ) 0 else ( way zip  way.tail.tail).map( n => isTurn(n._1, n._2)).sum
+
+  def lessThan2(way: List[Point]) = way match {
+
+    case a :: b :: c => false
+
+    case _ => true
+
+  }
 
 }
