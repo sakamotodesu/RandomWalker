@@ -27,3 +27,8 @@ I will challenge in solving the problem to think "Walker".
 * more walkers -- Finished!
 * parallel -- Finished!
 * walker is better strategy to learn
+
+
+##LICENSE
+
+Apache License, Version 2.0
