@@ -6,10 +6,17 @@ import scala.annotation.tailrec
 
 abstract case class Walker(map: Map, maxTurn: Int, way: List[Point]) {
  
-  def walk(w: List[Point], p: Point) =  p::w
+  def walk(w: List[Point], p: Point) =  p :: w
  
-  def movable(w: List[Point]) =
-    List(w.head.up, w.head.down, w.head.left, w.head.right) filter {map.contains(_)} filter { n => !(Way.passed(n, w))} filter { n => if (w.length < 2 ) true else (Way.isTurn(n, w.tail.head) + Way.turnCount(w) <= maxTurn)} 
+  def inMap(p: Point) = map contains p
+
+  def notPassed(p: Point, w: List[Point]) = ! Way.passed(p, w)
+
+  def withinLimit(p: Point, w: List[Point]) = if (w.length < 2 ) true else (Way.isTurn(p, w.tail.head) + Way.turnCount(w) <= maxTurn)
+
+  def movable(w: List[Point]) = {
+    List(w.head.up, w.head.down, w.head.left, w.head.right) filter {inMap(_)} filter {notPassed(_, w)} filter {withinLimit(_, w)} 
+  }
  
   def think(w: List[Point], next: List[Point]): Point
  
