@@ -70,7 +70,7 @@ object RandomWalker {
 
       case Result(walker, way) => {
         nrOfResults += 1
-        resultWays = way::resultWays
+        resultWays = way :: resultWays
         if (nrOfResults == nrOfWays) {
           GAMaster ! ResultsNextGeneration(resultWays)
         }
