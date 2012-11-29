@@ -65,7 +65,7 @@ object RandomWalker {
         resultWays = List()
         nrOfResults = 0
         nrOfWays = ways.length
-        ways.map( way => walkActorRouter ! LetsWalk(new ProbWalker(80, grid, maxTurn, way) ) )
+        ways.map(way => walkActorRouter ! LetsWalk(new ProbWalker(80, grid, maxTurn, way)))
       }
 
       case Result(walker, way) => {
@@ -91,56 +91,56 @@ object RandomWalker {
     var nrOfGenerations: Int = _
     var highscoreWay: List[Point] = List()
     val geneWalkActor =
-      context.actorOf(Props( new GeneWalkActor( nrOfWorkers, grid, maxTurn, self ) ), name = "geneWalkActor")
+      context.actorOf(Props(new GeneWalkActor(nrOfWorkers, grid, maxTurn, self)), name = "geneWalkActor")
 
     def receive = {
-      case StartWalking => nextGenerationStart( List( ( new NoPlanWalker( grid, maxTurn, List( startPoint ) ) ).start ) )
+      case StartWalking => nextGenerationStart(List((new NoPlanWalker(grid, maxTurn, List(startPoint))).start))
 
       case ResultsNextGeneration(ways) => GA(ways)
     }
 
     def nextGenerationStart(ways: List[List[Point]]) = geneWalkActor ! StartNextGeneration(ways)
 
-    def lottery(len: Int) = ( math.pow(new Random() nextInt len, 3) / math.pow(len, 2) ) toInt
+    def lottery(len: Int) = (math.pow(new Random() nextInt len, 3) / math.pow(len, 2)) toInt
 
     def evaluate(ways: List[List[Point]]) = {
       log.debug((ways.map(_.length).sum) / ways.length toString)
-      ways.sortBy( s => s.length ).reverse( lottery( ways.length ) )
+      ways.sortBy(s => s.length).reverse(lottery(ways.length))
     }
 
     def makeNextGenerationSeed(way: List[Point]) = {
       @tailrec
       def separateByTurn(seedWay: List[Point], ways: List[List[Point]]): List[List[Point]] = {
-        if ( seedWay.length <= 2 ) ways
-        else if ( Way.isTurn( seedWay.head, seedWay.tail.tail.head ) == 1 ) separateByTurn(seedWay.tail, seedWay.tail.tail::ways)
+        if (seedWay.length <= 2) ways
+        else if (Way.isTurn(seedWay.head, seedWay.tail.tail.head) == 1) separateByTurn(seedWay.tail, seedWay.tail.tail::ways)
         else separateByTurn(seedWay.tail, ways)
       }
       val nextWays = separateByTurn(way, List())
-      nextWays:::nextWays:::nextWays:::nextWays:::nextWays
+      nextWays ::: nextWays ::: nextWays ::: nextWays ::: nextWays
     }
 
     def GA(ways: List[List[Point]]) = {
       nrOfGenerations += 1
       val eliteWay = evaluate(ways)
 
-      if ( highscoreWay.length < eliteWay.length ) {
+      if (highscoreWay.length < eliteWay.length) {
         log.info("update highscore!")
-        printResult(new ProbWalker(80, grid, maxTurn, eliteWay), eliteWay, grid, nrOfGenerations)
+        printResult(eliteWay, grid, nrOfGenerations)
         highscoreWay = eliteWay
       }
 
-      if ( eliteWay.length - 1 > worldRecord ) {
+      if (eliteWay.length - 1 > worldRecord) {
         log.info("Wow!!! new world record !!!!!!!!!!")
-        printResult(new ProbWalker(80, grid, maxTurn, eliteWay), eliteWay, grid, nrOfGenerations)
+        printResult(eliteWay, grid, nrOfGenerations)
         context.system.shutdown()
         log.info("RandamWalker end!")
-      } else if ( nrOfGenerations == nrOfMaxGenerations ){
+      } else if (nrOfGenerations == nrOfMaxGenerations){
         log.info("max Generation!")
-        printResult(new ProbWalker(80, grid, maxTurn, highscoreWay), highscoreWay, grid, nrOfGenerations)
+        printResult(highscoreWay, grid, nrOfGenerations)
         context.system.shutdown()
         log.info("RandamWalker end!")
       } else {
-        nextGenerationStart( makeNextGenerationSeed( eliteWay ) )
+        nextGenerationStart(makeNextGenerationSeed(eliteWay))
       }
 
     }
@@ -152,10 +152,10 @@ object RandomWalker {
     def VisibleGrid(way: List[Point], grid: Grid) =  {
 
       val vm = Array.ofDim[String](expand(grid.x), expand(grid.y))
-      for ( i <- 0 to expand(grid.x) - 1; j <- 0 to expand(grid.y) - 1) {
+      for (i <- 0 to expand(grid.x) - 1; j <- 0 to expand(grid.y) - 1) {
         vm(i)(j) = " "
       }
-      for ( i <- 0 to grid.x - 1; j <- 0 to grid.y - 1) {
+      for (i <- 0 to grid.x - 1; j <- 0 to grid.y - 1) {
         vm(expand(i))(expand(j)) = "p"
       }
       vm(expand(way.head.x))(expand(way.head.y)) = "E"
@@ -164,9 +164,8 @@ object RandomWalker {
       vm.map(_.fold("")((z, n) => z + " " + n + " ")).fold("")((z, n) => z + n + "\n") 
     }
 
-    def printResult(walker: Walker, way: List[Point], grid: Grid, nrOfGenerations: Int) {
+    def printResult(way: List[Point], grid: Grid, nrOfGenerations: Int) {
       log.info("Generation:" + nrOfGenerations)
-      log.info("walker:" + walker.toString)
       log.info("steps:" + ( way.length - 1))
       log.info("turn:" + Way.turnCount(way))
       log.info(way.reverse.toString)
