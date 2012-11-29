@@ -9,7 +9,7 @@ object Walker {
   /**
    * The Walker class will receive a walking plan, walk in accordance with it. 
    */
-  case class Walker(grid: Grid, maxTurn: Int, way: List[Point], plan: ((List[Point], List[Point]) => Point)) {
+  case class Walker(grid: Grid, maxTurn: Int, way: List[Point])(plan: ((List[Point], List[Point]) => Point)) {
 
     def inGrid(p: Point) = grid contains p
 

@@ -65,7 +65,7 @@ object RandomWalker {
         resultWays = List()
         nrOfResults = 0
         nrOfWays = ways.length
-        ways.map(way => walkActorRouter ! LetsWalk(new Walker(grid, maxTurn, way, probPlan _)))
+        ways.map(way => walkActorRouter ! LetsWalk(new Walker(grid, maxTurn, way)(probPlan _)))
       }
 
       case Result(walker, way) => {
@@ -104,7 +104,7 @@ object RandomWalker {
       context.actorOf(Props(new GeneWalkActor(nrOfWorkers, grid, maxTurn, self)), name = "geneWalkActor")
 
     def receive = {
-      case StartWalking => nextGenerationStart(List((new Walker(grid, maxTurn, List(startPoint), noPlan _)).start))
+      case StartWalking => nextGenerationStart(List(new Walker(grid, maxTurn, List(startPoint))(noPlan _).start))
 
       case ResultsNextGeneration(ways) => GA(ways)
     }
