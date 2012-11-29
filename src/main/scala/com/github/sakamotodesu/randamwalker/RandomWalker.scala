@@ -3,8 +3,8 @@ package com.github.sakamotodesu.randomwalker
 import scala.util.Random
 import scala.math
 import scala.annotation.tailrec
-import com.github.sakamotodesu.randomwalker.way._
-import com.github.sakamotodesu.randomwalker.walker._
+import com.github.sakamotodesu.randomwalker.way.Way._
+import com.github.sakamotodesu.randomwalker.walker.Walker._
 import akka.actor._
 import akka.routing.RoundRobinRouter
 import akka.event.Logging
@@ -65,7 +65,7 @@ object RandomWalker {
         resultWays = List()
         nrOfResults = 0
         nrOfWays = ways.length
-        ways.map(way => walkActorRouter ! LetsWalk(new ProbWalker(80, grid, maxTurn, way)))
+        ways.map(way => walkActorRouter ! LetsWalk(new Walker(grid, maxTurn, way, probPlan _)))
       }
 
       case Result(walker, way) => {
@@ -94,7 +94,7 @@ object RandomWalker {
       context.actorOf(Props(new GeneWalkActor(nrOfWorkers, grid, maxTurn, self)), name = "geneWalkActor")
 
     def receive = {
-      case StartWalking => nextGenerationStart(List((new NoPlanWalker(grid, maxTurn, List(startPoint))).start))
+      case StartWalking => nextGenerationStart(List((new Walker(grid, maxTurn, List(startPoint), noPlan _)).start))
 
       case ResultsNextGeneration(ways) => GA(ways)
     }
@@ -112,7 +112,7 @@ object RandomWalker {
       @tailrec
       def separateByTurn(seedWay: List[Point], ways: List[List[Point]]): List[List[Point]] = {
         if (seedWay.length <= 2) ways
-        else if (Way.isTurn(seedWay.head, seedWay.tail.tail.head) == 1) separateByTurn(seedWay.tail, seedWay.tail.tail::ways)
+        else if (isTurn(seedWay.head, seedWay.tail.tail.head) == 1) separateByTurn(seedWay.tail, seedWay.tail.tail::ways)
         else separateByTurn(seedWay.tail, ways)
       }
       val nextWays = separateByTurn(way, List())
@@ -167,7 +167,7 @@ object RandomWalker {
     def printResult(way: List[Point], grid: Grid, nrOfGenerations: Int) {
       log.info("Generation:" + nrOfGenerations)
       log.info("steps:" + ( way.length - 1))
-      log.info("turn:" + Way.turnCount(way))
+      log.info("turn:" + turnCount(way))
       log.info(way.reverse.toString)
       log.info(VisibleGrid(way, grid))
     }

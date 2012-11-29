@@ -1,143 +1,54 @@
 package com.github.sakamotodesu.randomwalker.walker
 
-import com.github.sakamotodesu.randomwalker.way._
+import com.github.sakamotodesu.randomwalker.way.Way._
 import scala.util.Random
 import scala.annotation.tailrec
 
-abstract case class Walker(grid: Grid, maxTurn: Int, way: List[Point]) {
- 
-  def walk(w: List[Point], p: Point) =  p :: w
- 
-  def inGrid(p: Point) = grid contains p
+object Walker {
+  case class Walker(grid: Grid, maxTurn: Int, way: List[Point], plan: ((List[Point], List[Point]) => Point)) {
 
-  def notPassed(p: Point, w: List[Point]) = ! Way.passed(p, w)
+    def inGrid(p: Point) = grid contains p
 
-  def withinLimit(p: Point, w: List[Point]) = if (Way.lessThan2(w)) true else (Way.isTurn(p, w.tail.head) + Way.turnCount(w) <= maxTurn)
+    def notPassed(p: Point, w: List[Point]) = ! passed(p, w)
 
-  def movable(w: List[Point]) =
-    List(w.head.up, w.head.down, w.head.left, w.head.right) filter (inGrid(_)) filter (notPassed(_, w)) filter (withinLimit(_, w))
- 
-  def think(w: List[Point], next: List[Point]): Point
- 
-  def start = {
-    @tailrec
-    def walking(w: List[Point]): List[Point] = movable(w) match {
-      case Nil => w
-      case l => walking(walk(w, think(w, l)))
+    def withinLimit(p: Point, w: List[Point]) = if (lessThan2(w)) true else (isTurn(p, w.tail.head) + turnCount(w) <= maxTurn)
+
+    def movable(w: List[Point]) =
+      List(w.head.up, w.head.down, w.head.left, w.head.right) filter (inGrid(_)) filter (notPassed(_, w)) filter (withinLimit(_, w))
+
+    def think(w: List[Point], next: List[Point]): Point = plan(w, next)
+
+    def start = {
+      @tailrec
+      def walking(w: List[Point]): List[Point] = movable(w) match {
+        case Nil => w
+        case l => walking(think(w, l) :: w)
+      }
+      walking(way)
     }
-    walking(way)
+
   }
-
-}
-
-trait RandomWalk { 
- 
+  
   def random(w: List[Point], next: List[Point]) =  next(new Random() nextInt(next length))
 
-}
+  def toBeTrue(n: Int) = (new Random() nextInt(100)) < n
+  
+  def toBeFalse(n: Int) = (new Random() nextInt(100)) >= n
 
-trait StraightWalk {
-
+  def noPlan(w: List[Point], next: List[Point]) =  random(w, next)
+  
   def straight(w: List[Point], next: List[Point]) = {
-   next filter( n => if (Way.lessThan2(w)) true else (Way.isTurn(n, w.tail.head) == 0 ))  match {
+   next filter( n => if (lessThan2(w)) true else (isTurn(n, w.tail.head) == 0 ))  match {
 
       case List(p: Point) => p
 
       case _ => next(new Random() nextInt(next length))
-
+  
     }
   }
 
-}
+  def prob(w: List[Point], next: List[Point], prob: Int) =
+      if (toBeTrue(prob)) straight(w, next) else random(w, next)
 
-trait Probability {
-
-  def toBeTrue(n: Int) = (new Random() nextInt(100)) < n
-
-  def toBeFalse(n: Int) = (new Random() nextInt(100)) >= n
-
-}
-
-class NoPlanWalker(
-    grid: Grid,
-    maxTurn: Int,
-    way: List[Point])
-  extends Walker(grid, maxTurn, way)
-  with RandomWalk {
-
-  def think(w: List[Point], next: List[Point]) =  random(w, next)
-
-  override def toString = "NoPlanWalker"
-
-}
-
-class StraightWalker(
-    grid: Grid,
-    maxTurn: Int,
-    way: List[Point])
-  extends Walker(grid, maxTurn, way)
-  with StraightWalk {
-  
-  def think(w: List[Point], next: List[Point]) = straight(w, next)
-  
-  override def toString = "StraightWalker"
-
-}
-
-class StraightPrudentWalker(
-    grid: Grid,
-    maxTurn: Int,
-    way: List[Point])
-  extends Walker(grid, maxTurn, way)
-  with RandomWalk
-  with StraightWalk {
-
-  override def think(w: List[Point], next: List[Point]) = {
-    def check(p: Point) = {
-      movable(walk(w, p)) match {
-        case Nil =>  false
-        case _ => true
-      }
-    }
-    next filter( n => check(n)) match {
-      case Nil => random(w, next)
-      case nn => straight(w, nn) 
-    } 
-  } 
-
-  override def toString = "StraightPrudentWalker"
-
-}
-
-class Plan8020Walker(
-    grid: Grid,
-    maxTurn: Int,
-    way: List[Point])
-  extends Walker(grid, maxTurn, way)
-  with RandomWalk
-  with StraightWalk
-  with Probability {
-
-  override def think(w: List[Point], next: List[Point]) =
-    if (toBeTrue(80)) straight(w, next) else random(w, next)
-
-  override def toString = "Plan8020Walker"
-
-}
-
-class ProbWalker(
-    prob: Int,
-    grid: Grid,
-    maxTurn: Int,
-    way: List[Point])
-  extends Walker(grid, maxTurn, way)
-  with RandomWalk
-  with StraightWalk
-  with Probability {
-
-  override def think(w: List[Point], next: List[Point]) =
-    if (toBeTrue(prob)) straight(w, next) else random(w, next)
-
-  override def toString = "ProbWalker(" + prob + "%)"
-
+  def probPlan(w: List[Point], next: List[Point]) =  prob(w, next, 80)
 }
