@@ -15,7 +15,7 @@ case class Point(x: Int, y: Int) {
 
 }
 
-case class Map(x: Int, y: Int) {
+case class Grid(x: Int, y: Int) {
 
   def contains(p: Point) = if (0 <= p.x  && p.x <= x - 1 && 0 <= p.y && p.y <= y - 1) true else false
 

@@ -19,7 +19,7 @@ object RandomWalker {
                                  nrOfWorkers = 2,
                                  nrOfMaxGenerations = 10,
                                  startPoint = Point(4, 0),
-                                 map = Map(8, 8),
+                                 grid = Grid(8, 8),
                                  maxTurn = 15,
                                  worldRecord = 76)
                                ), name = "GAMaster")
@@ -49,7 +49,7 @@ object RandomWalker {
 
   class GeneWalkActor(
       nrOfWorkers: Int,
-      map: Map,
+      grid: Grid,
       maxTurn: Int,
       GAMaster: ActorRef)
     extends Actor {
@@ -61,18 +61,20 @@ object RandomWalker {
       context.actorOf(Props[WalkActor].withRouter(RoundRobinRouter(nrOfWorkers)), name = "walkActorRouter")
 
     def receive = {
-      case StartNextGeneration(ways) =>
+      case StartNextGeneration(ways) => {
         resultWays = List()
         nrOfResults = 0
         nrOfWays = ways.length
-        ways.map( way => walkActorRouter ! LetsWalk(new ProbWalker(80, map, maxTurn, way) ) )
+        ways.map( way => walkActorRouter ! LetsWalk(new ProbWalker(80, grid, maxTurn, way) ) )
+      }
 
-      case Result(walker, way) => 
+      case Result(walker, way) => {
         nrOfResults += 1
         resultWays = way::resultWays
         if (nrOfResults == nrOfWays) {
           GAMaster ! ResultsNextGeneration(resultWays)
         }
+      }
     }
   }
 
@@ -80,7 +82,7 @@ object RandomWalker {
       nrOfWorkers: Int,
       nrOfMaxGenerations: Int,
       startPoint: Point,
-      map: Map,
+      grid: Grid,
       maxTurn: Int,
       worldRecord: Int)
     extends Actor {
@@ -89,10 +91,10 @@ object RandomWalker {
     var nrOfGenerations: Int = _
     var highscoreWay: List[Point] = List()
     val geneWalkActor =
-      context.actorOf(Props( new GeneWalkActor( nrOfWorkers, map, maxTurn, self ) ), name = "geneWalkActor")
+      context.actorOf(Props( new GeneWalkActor( nrOfWorkers, grid, maxTurn, self ) ), name = "geneWalkActor")
 
     def receive = {
-      case StartWalking => nextGenerationStart( List( ( new NoPlanWalker( map, maxTurn, List( startPoint ) ) ).start ) )
+      case StartWalking => nextGenerationStart( List( ( new NoPlanWalker( grid, maxTurn, List( startPoint ) ) ).start ) )
 
       case ResultsNextGeneration(ways) => GA(ways)
     }
@@ -120,34 +122,40 @@ object RandomWalker {
     def GA(ways: List[List[Point]]) = {
       nrOfGenerations += 1
       val eliteWay = evaluate(ways)
+
       if ( highscoreWay.length < eliteWay.length ) {
         log.info("update highscore!")
-        printResult(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map, nrOfGenerations)
+        printResult(new ProbWalker(80, grid, maxTurn, eliteWay), eliteWay, grid, nrOfGenerations)
         highscoreWay = eliteWay
       }
+
       if ( eliteWay.length - 1 > worldRecord ) {
         log.info("Wow!!! new world record !!!!!!!!!!")
-        printResult(new ProbWalker(80, map, maxTurn, eliteWay), eliteWay, map, nrOfGenerations)
+        printResult(new ProbWalker(80, grid, maxTurn, eliteWay), eliteWay, grid, nrOfGenerations)
         context.system.shutdown()
         log.info("RandamWalker end!")
       } else if ( nrOfGenerations == nrOfMaxGenerations ){
         log.info("max Generation!")
-        printResult(new ProbWalker(80, map, maxTurn, highscoreWay), highscoreWay, map, nrOfGenerations)
+        printResult(new ProbWalker(80, grid, maxTurn, highscoreWay), highscoreWay, grid, nrOfGenerations)
         context.system.shutdown()
         log.info("RandamWalker end!")
       } else {
         nextGenerationStart( makeNextGenerationSeed( eliteWay ) )
       }
+
     }
 
-    def VisibleMap(way: List[Point], map: Map) =  {
-      def expand(n: Int) = 2 * n + 1
-      def path(n: Int) = expand(n) / 2
-      val vm = Array.ofDim[String](expand(map.x), expand(map.y))
-      for ( i <- 0 to expand(map.x) - 1; j <- 0 to expand(map.y) - 1) {
+    def expand(n: Int) = 2 * n + 1
+
+    def path(n: Int) = expand(n) / 2
+
+    def VisibleGrid(way: List[Point], grid: Grid) =  {
+
+      val vm = Array.ofDim[String](expand(grid.x), expand(grid.y))
+      for ( i <- 0 to expand(grid.x) - 1; j <- 0 to expand(grid.y) - 1) {
         vm(i)(j) = " "
       }
-      for ( i <- 0 to map.x - 1; j <- 0 to map.y - 1) {
+      for ( i <- 0 to grid.x - 1; j <- 0 to grid.y - 1) {
         vm(expand(i))(expand(j)) = "p"
       }
       vm(expand(way.head.x))(expand(way.head.y)) = "E"
@@ -156,13 +164,13 @@ object RandomWalker {
       vm.map(_.fold("")((z, n) => z + " " + n + " ")).fold("")((z, n) => z + n + "\n") 
     }
 
-    def printResult(walker: Walker, way: List[Point], map: Map, nrOfGenerations: Int) {
+    def printResult(walker: Walker, way: List[Point], grid: Grid, nrOfGenerations: Int) {
       log.info("Generation:" + nrOfGenerations)
       log.info("walker:" + walker.toString)
       log.info("steps:" + ( way.length - 1))
       log.info("turn:" + Way.turnCount(way))
       log.info(way.reverse.toString)
-      log.info(VisibleMap(way, map))
+      log.info(VisibleGrid(way, grid))
     }
 
   }

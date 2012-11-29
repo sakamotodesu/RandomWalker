@@ -4,18 +4,18 @@ import com.github.sakamotodesu.randomwalker.way._
 import scala.util.Random
 import scala.annotation.tailrec
 
-abstract case class Walker(map: Map, maxTurn: Int, way: List[Point]) {
+abstract case class Walker(grid: Grid, maxTurn: Int, way: List[Point]) {
  
   def walk(w: List[Point], p: Point) =  p :: w
  
-  def inMap(p: Point) = map contains p
+  def inGrid(p: Point) = grid contains p
 
   def notPassed(p: Point, w: List[Point]) = ! Way.passed(p, w)
 
   def withinLimit(p: Point, w: List[Point]) = if (Way.lessThan2(w)) true else (Way.isTurn(p, w.tail.head) + Way.turnCount(w) <= maxTurn)
 
   def movable(w: List[Point]) =
-    List(w.head.up, w.head.down, w.head.left, w.head.right) filter (inMap(_)) filter (notPassed(_, w)) filter (withinLimit(_, w))
+    List(w.head.up, w.head.down, w.head.left, w.head.right) filter (inGrid(_)) filter (notPassed(_, w)) filter (withinLimit(_, w))
  
   def think(w: List[Point], next: List[Point]): Point
  
@@ -59,10 +59,10 @@ trait Probability {
 }
 
 class NoPlanWalker(
-    map: Map,
+    grid: Grid,
     maxTurn: Int,
     way: List[Point])
-  extends Walker(map, maxTurn, way)
+  extends Walker(grid, maxTurn, way)
   with RandomWalk {
 
   def think(w: List[Point], next: List[Point]) =  random(w, next)
@@ -72,10 +72,10 @@ class NoPlanWalker(
 }
 
 class StraightWalker(
-    map: Map,
+    grid: Grid,
     maxTurn: Int,
     way: List[Point])
-  extends Walker(map, maxTurn, way)
+  extends Walker(grid, maxTurn, way)
   with StraightWalk {
   
   def think(w: List[Point], next: List[Point]) = straight(w, next)
@@ -85,10 +85,10 @@ class StraightWalker(
 }
 
 class StraightPrudentWalker(
-    map: Map,
+    grid: Grid,
     maxTurn: Int,
     way: List[Point])
-  extends Walker(map, maxTurn, way)
+  extends Walker(grid, maxTurn, way)
   with RandomWalk
   with StraightWalk {
 
@@ -110,10 +110,10 @@ class StraightPrudentWalker(
 }
 
 class Plan8020Walker(
-    map: Map,
+    grid: Grid,
     maxTurn: Int,
     way: List[Point])
-  extends Walker(map, maxTurn, way)
+  extends Walker(grid, maxTurn, way)
   with RandomWalk
   with StraightWalk
   with Probability {
@@ -127,10 +127,10 @@ class Plan8020Walker(
 
 class ProbWalker(
     prob: Int,
-    map: Map,
+    grid: Grid,
     maxTurn: Int,
     way: List[Point])
-  extends Walker(map, maxTurn, way)
+  extends Walker(grid, maxTurn, way)
   with RandomWalk
   with StraightWalk
   with Probability {
