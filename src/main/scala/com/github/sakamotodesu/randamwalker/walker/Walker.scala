@@ -5,6 +5,10 @@ import scala.util.Random
 import scala.annotation.tailrec
 
 object Walker {
+
+  /**
+   * The Walker class will receive a walking plan, walk in accordance with it. 
+   */
   case class Walker(grid: Grid, maxTurn: Int, way: List[Point], plan: ((List[Point], List[Point]) => Point)) {
 
     def inGrid(p: Point) = grid contains p
@@ -35,8 +39,6 @@ object Walker {
   
   def toBeFalse(n: Int) = (new Random() nextInt(100)) >= n
 
-  def noPlan(w: List[Point], next: List[Point]) =  random(w, next)
-  
   def straight(w: List[Point], next: List[Point]) = {
    next filter( n => if (lessThan2(w)) true else (isTurn(n, w.tail.head) == 0 ))  match {
 
@@ -50,5 +52,13 @@ object Walker {
   def prob(w: List[Point], next: List[Point], prob: Int) =
       if (toBeTrue(prob)) straight(w, next) else random(w, next)
 
+  /**
+   * This is a plan to proceed without thinking.
+   */
+  def noPlan(w: List[Point], next: List[Point]) =  random(w, next)
+
+  /**
+   * This plan is straight with a probability that is specified, go to random otherwise.
+   */
   def probPlan(w: List[Point], next: List[Point]) =  prob(w, next, 80)
 }

@@ -17,7 +17,7 @@ object RandomWalker {
     val GAMaster = 
       system.actorOf(Props(new GAMaster(
                                  nrOfWorkers = 2,
-                                 nrOfMaxGenerations = 10,
+                                 nrOfMaxGenerations = 100,
                                  startPoint = Point(4, 0),
                                  grid = Grid(8, 8),
                                  maxTurn = 15,
@@ -78,6 +78,16 @@ object RandomWalker {
     }
   }
 
+  /**
+   * The GAMaster class is a class that manages a genetic algorithm.
+   *
+   * In this genetic algorithm decomposes the Way that you selected from the previous generation first.
+   * We will make them as a material then walking again.
+   * 
+   * TODO:
+   * I should improve the algorithm more better.
+   * First of all, what is the genetic algorithm is suitable to this problem?
+   */
   class GAMaster(
       nrOfWorkers: Int,
       nrOfMaxGenerations: Int,

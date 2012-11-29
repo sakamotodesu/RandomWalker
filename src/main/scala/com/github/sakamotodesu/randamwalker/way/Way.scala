@@ -4,6 +4,10 @@ import scala.util.Random
 import scala.annotation.tailrec
 
 object Way {
+
+  /**
+   * The Point class is a point on the grid.
+   */
   case class Point(x: Int, y: Int) {
   
     def up = Point(x + 1, y)
@@ -16,6 +20,9 @@ object Way {
   
   }
   
+  /**
+   * The Grid class is a grid given in the problem.
+   */
   case class Grid(x: Int, y: Int) {
   
     def contains(p: Point) = if (0 <= p.x  && p.x <= x - 1 && 0 <= p.y && p.y <= y - 1) true else false
