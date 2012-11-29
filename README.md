@@ -15,6 +15,22 @@ Solve the problem of random walk.
 Does not solve the problem efficiently.
 I will challenge in solving the problem to think "Walker".
 
+###Why it does it this way?
+
+Because I thought I could write an interesting program with Akka, if "Walker".
+And I wanted to write a program to move autonomously.
+
+###Benefit
+
+Programming can be fun in Akka!
+
+###drawbacks
+
+Surely there is a more efficient solution.
+
+##Design
+I have created an algorithm in Akka.
+
 ## Requirements
 * Simple Build Tool Ver.0.12.0
 
