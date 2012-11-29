@@ -22,9 +22,11 @@ And I wanted to write a program to move autonomously.
 
 ###Benefit
 
+Programming can be fun in Akka!
 
 ###drawbacks
 
+Surely there is a more efficient solution.
 
 ##Design
 I have created an algorithm in Akka.
